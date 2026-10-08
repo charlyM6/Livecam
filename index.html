@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0c12">
+<title>Onde Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}html,body{margin:0}body{-webkit-text-size-adjust:100%}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:#0d0c12}
+:root{
+  --bg:#0d0c12; --ink:#f6f2ea; --muted:#b7b0c2; --glass:rgba(16,14,24,.55);
+  --accent:#ffb547; --live:#ff4d6d; --line:rgba(255,255,255,.14);
+  --display:"Unbounded",system-ui,sans-serif; --body:"Figtree",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
+.app{position:relative;height:100%;max-width:520px;margin:0 auto;overflow:hidden;background:#000}
+canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cam,#camImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:100%}
+#cam.mirror{transform:scaleX(-1)}
+#camImg{animation:kb 18s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.08) translate(-1%,1%)}}
+.camcard{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%);z-index:8;display:grid;gap:10px;text-align:center;
+  background:rgba(16,14,24,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:20px}
+.camcard b{font-family:var(--display);font-weight:600;font-size:16px;text-wrap:balance}
+.camcard span{color:var(--muted);font-size:14px;line-height:1.45}
+.camcard button{border:0;border-radius:12px;padding:13px;font:700 15px var(--body);cursor:pointer;background:var(--accent);color:#1a1205}
+.camcard button.ghost{background:rgba(255,255,255,.08);color:var(--ink);font-weight:600}
+.shade{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 22%,transparent 45%,rgba(0,0,0,.75) 100%)}
+.top{position:absolute;left:0;right:0;top:0;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:3}
+.host{display:flex;align-items:center;gap:8px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:4px;border-radius:999px;min-width:0}
+.ava{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--display);font-size:13px;
+  background:conic-gradient(from 200deg,var(--accent),var(--live),#7b6cff,var(--accent));color:#160f05}
+.host .who{min-width:0;line-height:1.15}
+.host b{display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.host small{font-size:11px;color:var(--muted)}
+.follow{border:0;background:var(--accent);color:#1a1205;font:700 12px var(--body);padding:8px 12px;border-radius:999px;cursor:pointer;flex:none}
+.follow.on{background:rgba(255,255,255,.16);color:var(--ink)}
+.spacer{flex:1}
+.pill{display:flex;align-items:center;gap:6px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:7px 10px;border-radius:999px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.live-tag{background:var(--live);color:#fff;font-family:var(--display);font-size:10px;letter-spacing:.08em;padding:7px 9px;border-radius:6px}
+.eye{width:14px;height:14px}
+.iconbtn{width:36px;height:36px;border-radius:50%;border:0;background:var(--glass);color:var(--ink);display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn:focus-visible,.follow:focus-visible,.send:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.titlebar{position:absolute;top:60px;left:16px;right:16px;z-index:3;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.titlebar h1{margin:0;font-family:var(--display);font-weight:600;font-size:15px;line-height:1.3;text-wrap:balance;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.chip{font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.14)}
+.gift{position:absolute;left:16px;top:120px;z-index:4;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);
+  background:linear-gradient(90deg,rgba(255,181,71,.95),rgba(255,77,109,.9));color:#1a0d05;border-radius:999px;padding:6px 14px 6px 6px;
+  transform:translateX(-120%);transition:transform .45s cubic-bezier(.2,.9,.3,1.2)}
+.gift.show{transform:none}
+.gift .gico{width:32px;height:32px;border-radius:50%;background:#1a0d05;color:var(--accent);display:grid;place-items:center;font-size:17px;flex:none}
+.gift b{font-size:13px}.gift span{font-size:12px;display:block}
+.chat{position:absolute;left:0;bottom:calc(72px + env(safe-area-inset-bottom,0px));width:78%;max-height:44%;z-index:3;padding:0 16px;
+  overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 30%);mask-image:linear-gradient(180deg,transparent 0,#000 30%)}
+.msg{font-size:14px;line-height:1.35;animation:pop .28s ease-out;text-shadow:0 1px 4px rgba(0,0,0,.7);min-width:0;overflow-wrap:anywhere}
+.msg .u{font-weight:700;margin-right:6px}
+.msg.sys{color:var(--muted);font-size:13px}
+.msg.me{background:rgba(255,181,71,.18);border-radius:10px;padding:4px 8px;align-self:flex-start}
+.msg.hl{background:linear-gradient(90deg,rgba(255,77,109,.45),rgba(255,77,109,0));border-radius:10px;padding:5px 8px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-right:5px;vertical-align:1px;background:#7b6cff;color:#fff}
+.badge.mod{background:#2fbf71}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rail{position:absolute;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:3;display:flex;flex-direction:column;gap:14px;align-items:center}
+.rail button{width:46px;height:46px;border-radius:50%;border:0;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);font-size:20px;cursor:pointer;display:grid;place-items:center}
+.rail .n{font-size:11px;font-weight:600;margin-top:-10px;font-variant-numeric:tabular-nums;text-shadow:0 1px 4px #000}
+.rail button:active{transform:scale(.92)}
+.hearts{position:absolute;right:8px;bottom:calc(150px + env(safe-area-inset-bottom,0px));width:70px;height:55%;pointer-events:none;z-index:2}
+.heart{position:absolute;bottom:0;left:50%;font-size:24px;will-change:transform,opacity;animation:float 2.6s ease-out forwards}
+@keyframes float{
+  0%{transform:translate(-50%,0) scale(.4);opacity:0}
+  10%{opacity:1;transform:translate(-50%,-10px) scale(1)}
+  100%{transform:translate(calc(-50% + var(--dx)),-340px) scale(.9);opacity:0}}
+.composer{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--ink);
+  font:500 15px var(--body);padding:12px 16px;border-radius:999px;outline:none}
+.composer input:focus{border-color:var(--accent)}
+.composer input::placeholder{color:var(--muted)}
+.send{border:0;background:var(--accent);color:#1a1205;width:46px;height:46px;border-radius:50%;cursor:pointer;display:grid;place-items:center;flex:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:#17151f;border-radius:20px 20px 0 0;padding:18px 20px calc(22px + env(safe-area-inset-bottom,0px));
+  transform:translateY(105%);transition:transform .3s ease;border-top:1px solid var(--line)}
+.sheet.open{transform:none}
+.sheet h2{font-family:var(--display);font-size:15px;font-weight:600;margin:0 0 4px}
+.sheet p.sub{margin:0 0 16px;color:var(--muted);font-size:13px}
+.field{display:grid;gap:6px;margin-bottom:16px}
+.field label{display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+.field label output{color:var(--accent);font-variant-numeric:tabular-nums}
+.field input[type=range]{width:100%;accent-color:var(--accent)}
+.field input[type=text]{background:#0f0e15;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font:500 14px var(--body)}
+.row{display:flex;gap:10px}
+.row button{flex:1;border:1px solid var(--line);background:#0f0e15;color:var(--ink);border-radius:12px;padding:12px;font:600 14px var(--body);cursor:pointer}
+.row button.primary{background:var(--accent);color:#1a1205;border-color:transparent}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:9;opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.open{opacity:1;pointer-events:auto}
+@media (prefers-reduced-motion:reduce){.msg,.heart{animation-duration:.01s}.gift{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <canvas id="stage" aria-hidden="true"></canvas>
+  <video id="cam" playsinline muted loop autoplay hidden></video>
+  <img id="camImg" alt="" hidden>
+  <div class="shade"></div>
+  <input type="file" id="camFile" accept="video/*,image/*" capture="user" hidden>
+  <div class="camcard" id="camcard">
+    <b>Passe en direct</b>
+    <span>Autorise la caméra quand ton navigateur te le demande. Rien n'est envoyé nulle part, l'image reste sur ton téléphone.</span>
+    <button id="camBtn">Allumer ma caméra</button>
+    <button class="ghost" id="camPick">Choisir une vidéo ou une photo</button>
+    <button class="ghost" id="camSkip">Plus tard</button>
+  </div>
+
+  <div class="top">
+    <div class="host">
+      <div class="ava" id="ava">LC</div>
+      <div class="who"><b id="hostName">LeroiCharles</b><small id="likes">0 j'aime</small></div>
+      <button class="follow" id="follow">Suivre</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="live-tag">LIVE</span>
+    <span class="pill" title="Spectateurs">
+      <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span id="viewers">0</span>
+    </span>
+    <button class="iconbtn" id="openSettings" aria-label="Réglages du live">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+
+  <div class="titlebar">
+    <h1 id="liveTitle">Discussion tranquille, venez parler</h1>
+    <span class="chip" id="uptime">00:00</span>
+  </div>
+
+  <div class="gift" id="gift"><div class="gico" id="giftIco">★</div><div><b id="giftWho"></b><span id="giftWhat"></span></div></div>
+
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="hearts" id="hearts"></div>
+
+  <div class="rail">
+    <button id="likeBtn" aria-label="Envoyer un cœur">❤️</button><span class="n" id="likeN">0</span>
+    <button id="giftBtn" aria-label="Envoyer un cadeau">🎁</button><span class="n">Cadeau</span>
+    <button id="shareBtn" aria-label="Partager">↗</button><span class="n" id="shareN">0</span>
+  </div>
+
+  <form class="composer" id="composer" autocomplete="off">
+    <input id="msgInput" type="text" placeholder="Écris un commentaire…" maxlength="140" aria-label="Commentaire">
+    <button class="send" type="submit" aria-label="Envoyer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+    </button>
+  </form>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="Réglages du live">
+    <h2>Réglages du live</h2>
+    <p class="sub">Tout est simulé : les spectateurs, le chat et les cadeaux.</p>
+    <div class="field">
+      <label for="setTitle">Titre du live</label>
+      <input type="text" id="setTitle" maxlength="70">
+    </div>
+    <div class="field">
+      <label for="setHost">Pseudo de l'hôte</label>
+      <input type="text" id="setHost" maxlength="24">
+    </div>
+    <div class="field">
+      <label for="setViewers">Spectateurs visés <output id="oViewers"></output></label>
+      <input type="range" id="setViewers" min="10" max="250000" step="10">
+    </div>
+    <div class="field">
+      <label for="setSpeed">Vitesse du chat <output id="oSpeed"></output></label>
+      <input type="range" id="setSpeed" min="1" max="10" step="1">
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <button id="camFlip">Retourner la caméra</button>
+      <button id="camAgain">Changer la source</button>
+    </div>
+    <div class="row">
+      <button id="raid">Lancer un raid</button>
+      <button class="primary" id="closeSettings">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const rand = (a,b) => a + Math.random()*(b-a);
+  const pick = a => a[Math.floor(Math.random()*a.length)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const state = { viewers: 0, target: 6000, speed: 5, likes: 0, shares: 0, start: Date.now(), following: false };
+
+  const first = ['lucas','chloe','nathan','ines','hugo','manon','theo','jade','enzo','lina','louis','zoe','mathis','emma','noah','sarah','yanis','lea','tom','camille','maxime','julie','karim','nina','bastien','alice','romain','margaux','sofiane','clara'];
+  const suf = ['_','.','','__','x'];
+  const tail = ['92','13','69','75','2k','33','pro','officiel','tv','_off','06','59','du31','bzh','lyon'];
+  const user = () => pick(first) + pick(suf) + pick(tail);
+  const colors = ['#ffb547','#8fd3ff','#c6a7ff','#7ee0a8','#ff9cb6','#ffd27a','#9cf0ec','#f5a97f'];
+  const colorFor = n => colors[[...n].reduce((s,c)=>s+c.charCodeAt(0),0)%colors.length];
+
+  const lines = [
+    'trop bien ce live 🔥','salut tout le monde !','première fois ici 👋','LeroiCharles le goat 🐐','bonsoir de Marseille',
+    'depuis la Belgique 🇧🇪','coucou de Lyon','jsuis en cours mais je regarde en cachette 😅','force à toi','mdrrr',
+    'ptdr j\'en peux plus','on est combien là ?','le chat est en feu ce soir','mets un peu de musique stp','abonné ✅',
+    't\'as quel âge ?','tu fais quoi ce week-end ?','dis bonjour à ma sœur stp 🙏','tu peux me passer un bonjour ?',
+    'c\'est quoi ton signe astro ?','t\'as mangé quoi ce midi ?','le roi est dans la place 👑','vive le roi 👑👑','❤️❤️❤️',
+    'qui est là depuis le début ?','trop drôle','je suis mort 💀','incroyable','continue comme ça','frérot t\'es trop fort',
+    'réponds-moi stp 😭','tu streames tous les jours ?','c\'est quoi ta caméra ?','la qualité est folle','👀','ahah','gg','wow',
+    'team OM ou team PSG ?','raconte la suite !','t\'as vu le dernier match ?','je partage à tous mes potes','on veut une FAQ',
+    'tu fais un live demain ?','RIP mon forfait 4G','bonne nuit à tous je vais dormir','reste encore un peu stp','salut le roi 👋'
+  ];
+  const replies = ['grave','c\'est clair','+1','pareil','mdr oui','ah ouais ?','tellement'];
+  const gifts = [['🌹','une rose'],['🍩','un donut'],['⭐','une étoile'],['👑','une couronne'],['💎','un diamant'],['🚀','une fusée']];
+
+  const chat = $('chat');
+  function addMsg({name, text, cls='', badge=''}) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    if (name) {
+      if (badge) { const b = document.createElement('span'); b.className = 'badge' + (badge==='Modo'?' mod':''); b.textContent = badge; d.appendChild(b); }
+      const u = document.createElement('span'); u.className = 'u'; u.style.color = colorFor(name); u.textContent = name; d.appendChild(u);
+    }
+    d.appendChild(document.createTextNode(text));
+    chat.appendChild(d);
+    while (chat.children.length > 40) chat.firstChild.remove();
+  }
+  let lastName = null;
+  function botMessage() {
+    const name = user();
+    const r = Math.random();
+    let badge = r < .05 ? 'Modo' : r < .15 ? 'Abonné' : '';
+    let text = (lastName && Math.random() < .12) ? '@' + lastName + ' ' + pick(replies) : pick(lines);
+    addMsg({ name, text, badge });
+    lastName = name;
+    if (Math.random() < .06) addMsg({ text: name + ' a rejoint le live', cls:'sys' });
+  }
+  function chatLoop() {
+    if (!document.hidden) {
+      const burst = Math.random() < .15 ? Math.ceil(rand(2,4)) : 1;
+      for (let i=0;i<burst;i++) botMessage();
+    }
+    const vf = Math.min(1, Math.log10(Math.max(10,state.viewers))/5);
+    const base = 2400 / (state.speed * (0.4 + vf));
+    setTimeout(chatLoop, rand(base*.4, base*1.4));
+  }
+
+  const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1).replace('.',',')+' M' : n >= 1e4 ? (n/1e3).toFixed(1).replace('.',',')+' k' : n.toLocaleString('fr-FR');
+  function viewerLoop() {
+    const diff = state.target - state.viewers;
+    state.viewers += Math.round(diff * rand(.05,.18) + rand(-1,1) * state.target * .008);
+    state.viewers = Math.max(1, state.viewers);
+    $('viewers').textContent = fmt(state.viewers);
+    setTimeout(viewerLoop, rand(700,1600));
+  }
+
+  const heartsEl = $('hearts');
+  const heartGlyphs = ['❤️','🧡','💛','💜','🩷','🤍'];
+  function heart(glyph) {
+    if (reduce || heartsEl.childElementCount > 60) return;
+    const h = document.createElement('span');
+    h.className = 'heart'; h.textContent = glyph || pick(heartGlyphs);
+    h.style.setProperty('--dx', rand(-50,30)+'px');
+    h.style.fontSize = rand(18,30)+'px';
+    heartsEl.appendChild(h);
+    h.addEventListener('animationend', () => h.remove());
+  }
+  function addLikes(n){ state.likes += n; $('likes').textContent = fmt(state.likes)+' j\'aime'; $('likeN').textContent = fmt(state.likes); }
+  function likeLoop() {
+    const rate = Math.min(8, 2 + state.viewers/2000);
+    const n = Math.random() < .85 ? Math.ceil(rand(1,rate)) : 0;
+    for (let i=0;i<n;i++) setTimeout(()=>heart(), i*120);
+    addLikes(n * Math.ceil(rand(1, 1 + state.viewers/400)));
+    setTimeout(likeLoop, rand(350,800));
+  }
+  $('likeBtn').addEventListener('click', () => { heart('❤️'); addLikes(1); });
+  ['stage','cam','camImg'].forEach(id => $(id).addEventListener('click', () => { for(let i=0;i<3;i++) setTimeout(()=>heart('❤️'), i*90); addLikes(3); }));
+
+  const giftEl = $('gift'); let giftTimer;
+  function showGift(name, g, count) {
+    $('giftIco').textContent = g[0];
+    $('giftWho').textContent = name;
+    $('giftWhat').textContent = 'a envoyé ' + g[1] + (count>1 ? ' ×' + count : '');
+    giftEl.classList.add('show');
+    clearTimeout(giftTimer); giftTimer = setTimeout(() => giftEl.classList.remove('show'), 3200);
+    addMsg({ name, text: 'a envoyé ' + g[1] + ' ' + g[0], cls:'hl' });
+    for (let i=0;i<5;i++) setTimeout(()=>heart(g[0]), i*150);
+  }
+  function giftLoop() {
+    if (!document.hidden) showGift(user(), pick(gifts), Math.random()<.3 ? Math.ceil(rand(2,20)) : 1);
+    setTimeout(giftLoop, rand(9000, 22000) / Math.max(.5, state.speed/5));
+  }
+  $('giftBtn').addEventListener('click', () => showGift('toi', pick(gifts), 1));
+
+  $('shareBtn').addEventListener('click', () => { state.shares++; $('shareN').textContent = state.shares; addMsg({text:'Tu as partagé le live', cls:'sys'}); });
+  setInterval(() => { if (Math.random()<.3){ state.shares += 1; $('shareN').textContent = fmt(state.shares);} }, 4000);
+  $('follow').addEventListener('click', e => {
+    state.following = !state.following;
+    e.currentTarget.classList.toggle('on', state.following);
+    e.currentTarget.textContent = state.following ? 'Abonné' : 'Suivre';
+    if (state.following) addMsg({text:'Tu suis maintenant ' + $('hostName').textContent, cls:'sys'});
+  });
+
+  const hostReplies = ['merci 🙏','ahah oui !','bonne question, je réponds juste après','bienvenue à toi !','yes exactement','trop gentil merci','mdr non','on en parle tout de suite'];
+  $('composer').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('msgInput').value.trim(); if (!v) return;
+    addMsg({ name:'toi', text:v, cls:'me' });
+    $('msgInput').value = '';
+    setTimeout(() => addMsg({ name: user(), text: '@toi ' + pick(replies) }), rand(800, 2500));
+    if (Math.random() < .5) setTimeout(() => addMsg({ name: $('hostName').textContent, text: '@toi ' + pick(hostReplies), badge:'Hôte' }), rand(2500, 5000));
+  });
+
+  setInterval(() => {
+    const s = Math.floor((Date.now()-state.start)/1000);
+    const h = Math.floor(s/3600), m = Math.floor(s%3600/60), sec = s%60;
+    $('uptime').textContent = (h? h+':' : '') + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  }, 1000);
+
+  const sheet = $('sheet'), scrim = $('scrim');
+  const open = v => { sheet.classList.toggle('open', v); scrim.classList.toggle('open', v); };
+  $('openSettings').addEventListener('click', () => open(true));
+  $('closeSettings').addEventListener('click', () => open(false));
+  scrim.addEventListener('click', () => open(false));
+  $('setTitle').value = $('liveTitle').textContent;
+  $('setHost').value = $('hostName').textContent;
+  $('setViewers').value = state.target; $('oViewers').textContent = fmt(state.target);
+  $('setSpeed').value = state.speed; $('oSpeed').textContent = state.speed + '/10';
+  $('setTitle').addEventListener('input', e => $('liveTitle').textContent = e.target.value || 'Live');
+  $('setHost').addEventListener('input', e => {
+    const v = e.target.value || 'hote';
+    $('hostName').textContent = v;
+    $('ava').textContent = v.replace(/[^a-zA-Z]/g,'').slice(0,2).toUpperCase() || '?';
+  });
+  $('setViewers').addEventListener('input', e => { state.target = +e.target.value; $('oViewers').textContent = fmt(state.target); });
+  $('setSpeed').addEventListener('input', e => { state.speed = +e.target.value; $('oSpeed').textContent = state.speed + '/10'; });
+  $('raid').addEventListener('click', () => {
+    const n = Math.round(state.target * rand(.3,.8)) + 200;
+    const from = user();
+    addMsg({ text: '⚡ Raid de ' + from + ' avec ' + fmt(n) + ' spectateurs !', cls:'hl' });
+    state.viewers += n; state.target += Math.round(n*.6);
+    $('setViewers').value = Math.min(250000, state.target); $('oViewers').textContent = fmt(state.target);
+    const prev = state.speed; state.speed = 10; setTimeout(()=> state.speed = prev, 6000);
+    for (let i=0;i<14;i++) setTimeout(()=>heart(), i*80);
+    open(false);
+  });
+
+  const cv = $('stage'), ctx = cv.getContext('2d');
+  let W, H, dpr;
+  function resize(){ dpr = Math.min(2, devicePixelRatio||1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); }
+  addEventListener('resize', resize); resize();
+  const bokeh = Array.from({length:22}, () => ({ x:Math.random(), y:Math.random()*.6, r:rand(8,40), h:pick([38,30,200,330,45]), a:rand(.08,.25), p:Math.random()*6.28 }));
+  function frame(t){
+    const s = t/1000;
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1d1830'); g.addColorStop(1,'#0d0c12');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    for (const b of bokeh){ const a = b.a*(.7+.3*Math.sin(s*.8+b.p)); ctx.fillStyle=`hsla(${b.h},90%,70%,${a})`; ctx.beginPath(); ctx.arc(b.x*W + Math.sin(s*.2+b.p)*6, b.y*H + H*.15, b.r, 0, 6.283); ctx.fill(); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  const cam = $('cam'), camImg = $('camImg'), camcard = $('camcard'), camFile = $('camFile');
+  let objUrl = null, stream = null, facing = 'user';
+  function clearMedia(){
+    if (stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
+    if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
+    cam.hidden = true; camImg.hidden = true; cam.removeAttribute('src'); cam.srcObject = null;
+  }
+  function goLive(){
+    camcard.hidden = true;
+    addMsg({ text:'Le live a commencé 🔴', cls:'sys' });
+    setTimeout(()=>addMsg({ name:user(), text:'ohhh on te voit enfin 😍' }), 900);
+    setTimeout(()=>addMsg({ name:user(), text:'t\'es trop frais aujourd\'hui' }), 2200);
+  }
+  async function tryCamera(){
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw 0;
+      const s = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:facing, width:{ideal:1280}, height:{ideal:720} }, audio:false });
+      clearMedia(); stream = s;
+      cam.srcObject = s; cam.classList.toggle('mirror', facing==='user'); cam.hidden = false; await cam.play().catch(()=>{});
+      if (!camcard.hidden) goLive();
+    } catch (e) {
+      if (camcard.hidden) return;
+      addMsg({ text:'Caméra refusée ou indisponible. Tu peux choisir une vidéo à la place.', cls:'sys' });
+      camFile.setAttribute('capture','user');
+      camFile.click();
+    }
+  }
+  camFile.addEventListener('change', () => {
+    const f = camFile.files && camFile.files[0]; if (!f) return;
+    clearMedia(); objUrl = URL.createObjectURL(f);
+    if (f.type.startsWith('image/')) { camImg.src = objUrl; camImg.hidden = false; }
+    else { cam.classList.remove('mirror'); cam.src = objUrl; cam.hidden = false; cam.play().catch(()=>{}); }
+    camFile.value = '';
+    goLive();
+  });
+  async function flipCam(){ if(!stream){ open(false); return; } facing = facing==='user' ? 'environment' : 'user'; open(false); await tryCamera(); }
+  $('camBtn').addEventListener('click', tryCamera);
+  $('camPick').addEventListener('click', () => { camFile.removeAttribute('capture'); camFile.click(); });
+  $('camSkip').addEventListener('click', () => { camcard.hidden = true; });
+  $('camFlip').addEventListener('click', flipCam);
+  $('camAgain').addEventListener('click', () => { open(false); camcard.hidden = false; });
+
+  addMsg({ text:'Bienvenue sur le live ! Reste respectueux dans le chat.', cls:'sys' });
+  for (let i=0;i<6;i++) botMessage();
+  state.viewers = Math.round(state.target*rand(.85,.95));
+  viewerLoop(); chatLoop(); likeLoop(); setTimeout(giftLoop, 4000);
+})();
+</script>
+</body>
+</html>
