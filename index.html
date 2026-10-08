@@ -39,6 +39,9 @@ canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
 .camcard button{border:0;border-radius:14px;padding:14px;font:800 15px var(--body);cursor:pointer;color:#fff;
   background:linear-gradient(90deg,var(--pink),#ff5c7a);box-shadow:0 8px 24px rgba(254,44,85,.4)}
 .camcard button.ghost{background:rgba(255,255,255,.08);color:var(--ink);font-weight:600;box-shadow:none}
+.camtitle{width:100%;border:1px solid var(--line);background:#0f0e15;color:var(--ink);border-radius:12px;padding:12px 14px;font:600 15px var(--body);text-align:center;outline:none}
+.camtitle:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(254,44,85,.2)}
+.camtitle::placeholder{color:var(--muted);font-weight:500}
 .camcard[hidden]{display:none}
 .shade{position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 20%,transparent 50%,rgba(0,0,0,.8) 100%)}
@@ -47,7 +50,7 @@ canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
   padding:4px;border-radius:999px;min-width:0;border:1px solid rgba(255,255,255,.08)}
 .ava{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--display);font-size:13px;font-weight:800;
   color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);
-  background:conic-gradient(from 160deg,var(--cyan),var(--violet),var(--pink),var(--gold),var(--cyan));box-shadow:0 2px 10px rgba(0,0,0,.4)}
+  background:var(--pink);box-shadow:0 2px 10px rgba(0,0,0,.4)}
 .host .who{min-width:0;line-height:1.2}
 .host b{display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
 .host small{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -130,6 +133,7 @@ canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
   <input type="file" id="camFile" accept="video/*,image/*" capture="user" hidden>
   <div class="camcard" id="camcard">
     <b>Passe en direct</b>
+    <input type="text" id="camTitle" class="camtitle" maxlength="70" placeholder="Titre de ton live (ex. On papote ensemble !)" aria-label="Titre du live">
     <span>Autorise la caméra quand ton navigateur te le demande. Rien n'est envoyé nulle part, l'image reste sur ton téléphone.</span>
     <button id="camBtn">Allumer ma caméra</button>
     <button class="ghost" id="camPick">Choisir une vidéo ou une photo</button>
@@ -224,15 +228,111 @@ canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
   const colorFor = n => colors[[...n].reduce((s,c)=>s+c.charCodeAt(0),0)%colors.length];
 
   const lines = [
-    'trop bien ce live 🔥','salut tout le monde !','première fois ici 👋','LeroiCharles le goat 🐐','bonsoir de Marseille',
-    'depuis la Belgique 🇧🇪','coucou de Lyon','jsuis en cours mais je regarde en cachette 😅','force à toi','mdrrr',
-    'ptdr j\'en peux plus','on est combien là ?','le chat est en feu ce soir','mets un peu de musique stp','abonné ✅',
-    't\'as quel âge ?','tu fais quoi ce week-end ?','dis bonjour à ma sœur stp 🙏','tu peux me passer un bonjour ?',
-    'c\'est quoi ton signe astro ?','t\'as mangé quoi ce midi ?','le roi est dans la place 👑','vive le roi 👑👑','❤️❤️❤️',
-    'qui est là depuis le début ?','trop drôle','je suis mort 💀','incroyable','continue comme ça','frérot t\'es trop fort',
-    'réponds-moi stp 😭','tu streames tous les jours ?','c\'est quoi ta caméra ?','la qualité est folle','👀','ahah','gg','wow',
-    'team OM ou team PSG ?','raconte la suite !','t\'as vu le dernier match ?','je partage à tous mes potes','on veut une FAQ',
-    'tu fais un live demain ?','RIP mon forfait 4G','bonne nuit à tous je vais dormir','reste encore un peu stp','salut le roi 👋'
+    // arrivées
+    'salut tout le monde !','bonsoir à tous 👋','coucou 👋','hello !','yo la team','wesh la famille','salut le roi 👋',
+    're tout le monde','de retour 😄','première fois ici 👋','je découvre ta chaîne','enchanté tout le monde','bien ou quoi ?',
+    'ça va vous ?','slt','cc','hey 👋','bonsoir bonsoir','salut la commu','coucou tout le monde 🥰','hello la famille',
+    'yo yo yo','bien le bonsoir','salut les gens','wesh','coucou le roi 👑','bonsoir mes amis','salut à toi 👋',
+    'premier live que je regarde de toi','je tombe sur ton live par hasard','bonsoir depuis mon lit 🛏️','me revoilà 😄',
+    'salut la mif','grand bonsoir','coucou la team ❤️',
+    // villes / pays
+    'bonsoir de Marseille','coucou de Lyon 🦁','salut de Paris','depuis la Belgique 🇧🇪','depuis la Suisse 🇨🇭',
+    'salut du Québec 🇨🇦','bonjour de Lille','de Toulouse ici','Bordeaux présent','Nantes dans la place','Strasbourg 👋',
+    'salut de Nice ☀️','Montpellier présent','salut de Rennes','Grenoble ici','coucou de Rabat 🇲🇦','salut d\'Alger 🇩🇿',
+    'bonsoir de Tunis 🇹🇳','depuis Dakar 🇸🇳','salut du Cameroun 🇨🇲','coucou de Côte d\'Ivoire 🇨🇮','salut de Londres 🇬🇧',
+    'bonsoir de Madrid 🇪🇸','ici l\'Italie 🇮🇹','salut du Portugal 🇵🇹','coucou de Genève','bonjour de Bruxelles',
+    'Luxembourg présent','salut de La Réunion 🌴','coucou de Guadeloupe 🌴','bonsoir de Martinique','depuis le Maroc 🇲🇦',
+    'salut de Casablanca','team 93 dans la place','le 59 est là','le 13 représente 💪','coucou de la Corse',
+    'salut de Clermont','bonsoir de Metz','ici Angers','présent depuis Reims','salut de Dijon','coucou de Brest',
+    'bonjour de Perpignan','depuis Amiens 👋','salut de Tours','coucou du 06 ☀️','le 75 est là','bonsoir de Mulhouse',
+    'salut depuis Annecy','salut de Caen','coucou de Nîmes','bonsoir de Pau','présent depuis Limoges','salut de La Rochelle',
+    'ici Avignon','coucou de Besançon','bonjour de Valence','salut de Chambéry','depuis Bayonne 🌊',
+    // compliments
+    'trop bien ce live 🔥','le goat 🐐','le roi est dans la place 👑','vive le roi 👑👑','t\'es trop fort frérot',
+    'franchement respect','la qualité est folle','le meilleur live de la soirée','t\'assures grave','j\'adore ton contenu',
+    'continue comme ça 💪','t\'es au top','trop charismatique','on t\'aime ❤️','le plus beau sourire 😍',
+    'meilleur streamer de France','tu mérites plus de vues','pépite ce live','gros niveau ce soir','t\'es une légende',
+    'tu gères de ouf','trop inspirant','merci pour la bonne humeur 😊','tu transmets trop d\'énergie ⚡',
+    'jamais déçu par tes lives','la pépite du soir ✨','belle personne 🙏','trop authentique','jamais tu déçois',
+    'tu rayonnes ce soir','le charisme 🔥','trop classe','t\'es incroyable','on est fiers de toi','le boss 💼',
+    'le talent 👏','meilleur live que j\'ai vu','t\'as une voix trop agréable','franchement bravo','t\'as trop de talent',
+    'tu me fais trop rire 😂','merci pour ce moment ❤️','t\'es solaire ☀️','jamais vu un live aussi cool',
+    'le feeling est là 🔥','tu dégages quelque chose de bien','je reste juste pour toi',
+    // réactions / rires
+    'mdrrr','ptdr j\'en peux plus','mdr oui','je suis mort 💀','jpp 😂','ahahah','mort de rire','trop drôle','incroyable',
+    'wow','😮','👀','ahah','gg','gros fou rire là','j\'ai explosé de rire','c\'est abusé mdr','nooon mdrrr','t\'es un fou 😂',
+    'mais lol','srx ?','sérieux ?','ah ouais quand même','pas possible 😮','je rêve là','c\'est ouf','énorme',
+    'la vache 😮','oh le fou','c\'est validé ✅','approuvé 👍','respect total','chapeau 🎩','jsuis plié 😂','arrête mdr',
+    'trop vrai 😂','n\'importe quoi mdrrr','je peux plus respirer 😭','c\'est culte ça',
+    // questions
+    't\'as quel âge ?','tu fais quoi dans la vie ?','tu streames tous les jours ?','c\'est quoi ta caméra ?','tu viens d\'où ?',
+    'c\'est quoi ton métier ?','tu joues à quoi en ce moment ?','ton plat préféré ?','tu écoutes quoi comme musique ?',
+    'c\'est quoi ton signe astro ?','t\'as mangé quoi ce midi ?','tu fais quoi ce week-end ?','tu as des animaux ?',
+    'c\'est quoi ton film préféré ?','tu pars en vacances où cet été ?','combien d\'abonnés tu vises ?','tu fais un live demain ?',
+    'depuis quand tu streames ?','t\'as un discord ?','c\'est quoi ton insta ?','on est combien là ?','tu réponds aux questions ?',
+    'c\'est quoi ton setup ?','tu as des frères et sœurs ?','tu habites en ville ou à la campagne ?','tu préfères été ou hiver ?',
+    'chien ou chat ?','thé ou café ?','PS5 ou Xbox ?','iPhone ou Android ?','sucré ou salé ?','montagne ou plage ?',
+    'couche-tôt ou couche-tard ?','tu parles combien de langues ?','tu as voyagé où ?','ton pays de rêve ?','tu fais du sport ?',
+    'quel est ton rêve ?','tu te lèves à quelle heure ?','c\'est quoi ta série du moment ?','t\'as quel téléphone ?',
+    'quelle heure le prochain live ?','tu préfères la mer ou la piscine ?','café serré ou allongé ?','t\'es du matin ou du soir ?',
+    'tu lis des livres ?','ton dernier voyage c\'était où ?','tu crois aux signes astro ?',
+    // demandes de coucou
+    'dis bonjour à ma sœur stp 🙏','tu peux me passer un bonjour ?','un petit coucou pour ma pote ?','cite mon pseudo stp 😭',
+    'réponds-moi stp 😭','tu peux dire joyeux anniv à Léa ? 🎂','un shoutout stp 🙏','dis bonjour aux nouveaux 👋',
+    'mentionne-moi une fois stp','salue la team du tchat 🙏','un bisou pour ma mère stp ❤️','dédicace pour mon frère 🙏',
+    'tu peux lire mon message ? 😅','coucou à ma best 💕','un petit mot pour les timides 👉👈',
+    // foot
+    'team OM ou team PSG ?','allez l\'OM 🔵⚪','ici c\'est Paris ❤️💙','t\'as vu le dernier match ?','on parle foot ?',
+    'le PSG va tout gagner','l\'OL remonte 🔴🔵','Mbappé le meilleur','Benzema 🐐','c\'était quoi ce match hier 😤',
+    'allez les Bleus 🇫🇷','le Real c\'est le Real 👑','vive Marseille ⚪🔵','on gagne la Ligue des Champions','foot ou basket ?',
+    // musique
+    'mets un peu de musique stp','tu peux mettre du son ?','c\'est quoi cette musique ?','balance une playlist 🎵',
+    'mets du rap stp','un peu de zouk 🎶','tu chantes ce soir ?','cette musique est un classique 🎵','j\'ai la ref 🎶',
+    'monte le son 🔊','trop bon ce son','tu connais tel artiste ?','recommande-moi une musique','du son svp 🎧',
+    'mets ta musique préférée',
+    // bouffe
+    'je mange devant ton live 🍕','tu veux une part de pizza ? 🍕','c\'est l\'heure de l\'apéro 🍻','je bois mon café ☕',
+    'miam j\'ai faim là','recommande-moi un resto','tu bois quoi là ?','je grignote devant 🍿','pop-corn prêt 🍿',
+    'apéro time 🥂','santé 🍻','tu cuisines parfois en live ?','j\'ai trop faim en te regardant 😅','kebab ou tacos ?',
+    'pizza ananas, pour ou contre ? 🍍',
+    // hype / engagement
+    'le chat est en feu ce soir 🔥','on est chauds ce soir 🔥','qui est là depuis le début ?','on fait péter les cœurs ❤️',
+    'spam de cœurs ❤️❤️❤️','objectif 10k likes 🚀','on partage à un max de monde','invite tes potes 📲',
+    'je partage à tous mes amis','faites tourner le live','on veut une FAQ','fais un Q&A stp','raconte la suite !',
+    'le chat va trop vite 😅','je te suis depuis le début 💪','présent chaque soir 🫡','jamais je rate un live',
+    'je mets une alerte à chaque fois 🔔','qui spam les cœurs avec moi ?','on explose le compteur 📈',
+    'tous ensemble pour les likes','let\'s go la team 🚀','on lâche rien ce soir 💪','on fait du bruit 📢',
+    'c\'est parti pour un raid ⚡','on envoie du lourd 💥','la team débarque 🚀','force à la commu 💪',
+    'on est une famille ici ❤️','record de viewers ce soir 📈','la commu est trop forte 💪','on lâche rien 🫡',
+    // abonnement
+    'abonné ✅','je viens de m\'abonner 🔔','abonnez-vous les gens','follow fait 👍','je te follow depuis longtemps',
+    'nouveau abonné ici 🙋','ça y est je suis abo','liké et partagé ✅','je m\'abonne direct','follow + like 👍❤️',
+    'fidèle au poste 🫡',
+    // vie quotidienne
+    'jsuis en cours mais je regarde en cachette 😅','je bosse mais je t\'écoute 👂','au boulot mais présent 🫡',
+    'dans le train je regarde 🚆','je regarde sous ma couette 🛏️','RIP mon forfait 4G','je devrais dormir mais je reste 😴',
+    'demain j\'ai cours tôt mais je reste','je révise en t\'écoutant 📚','je fais le ménage avec ton live 🧹',
+    'journée longue mais je suis là 😮‍💨','enfin le week-end 🙌','lundi difficile mais présent','en vacances et je regarde 🏖️',
+    'malade mais je rate pas 🤒','insomnie donc je regarde 🌙','je mange mon dîner avec toi 🍽️','je t\'écoute en conduisant 🚗',
+    'pause déj devant ton live 🍴','je rentre du sport et je te regarde 💪',
+    // départs
+    'bonne nuit à tous je vais dormir 😴','je dois y aller, à demain 👋','merci pour le live, bonne soirée',
+    'je file mais c\'était top','à la prochaine le roi 👑','obligé de partir, force à toi','reste encore un peu stp',
+    'pars pas déjà 😭','ne coupe pas tout de suite 🙏','encore 5 min stp','aller bonne nuit 😴','je vous laisse, bisous',
+    'faut que je dorme, à demain','je repasse plus tard','pause pipi je reviens 😂','à demain sans faute 🫡',
+    'gros bisous à tous ❤️','je me déconnecte, bonne nuit',
+    // emojis / courts
+    '❤️❤️❤️','🔥🔥🔥','👑👑','😍','🐐','🙌','💪','🥰','😂😂😂','👏👏','🚀','✨','💯','🎉','🤩','🥳','😭❤️','🫶',
+    '💛','💜','🧡','🤍','🙏','💥','🔥','👑',
+    // approbation
+    'grave','c\'est clair','tellement','exactement','carrément','trop vrai','bien d\'accord','+1','pareil ici','je valide ✅',
+    '100% d\'accord','clairement','ça c\'est sûr',
+    // ambiance
+    'trop stylé le décor','j\'adore l\'ambiance','la lumière est parfaite ✨','ton fond est magnifique',
+    'belle qualité d\'image 👌','le son est nickel 🎧','première fois que je reste aussi longtemps','ça fait 2h que je regarde 😅',
+    'je suis accro à tes lives','meilleure soirée 🙌','tu me redonnes le sourire 😊','journée de galère mais ton live sauve tout ❤️',
+    'merci d\'être là chaque soir','t\'es une bonne personne 🙏','bonne continuation à toi','l\'ambiance est top ce soir ✨',
+    'trop apaisant ton live','je me sens bien ici 🥰','c\'est devenu mon rituel du soir','jamais je m\'ennuie avec toi'
   ];
   const replies = ['grave','c\'est clair','+1','pareil','mdr oui','ah ouais ?','tellement'];
   const gifts = [['🌹','une rose'],['🍩','un donut'],['⭐','une étoile'],['👑','une couronne'],['💎','un diamant'],['🚀','une fusée']];
@@ -351,6 +451,11 @@ canvas#stage{position:absolute;inset:0;width:100%;height:100%;display:block}
   $('setViewers').value = state.target; $('oViewers').textContent = fmt(state.target);
   $('setSpeed').value = state.speed; $('oSpeed').textContent = state.speed + '/10';
   $('setTitle').addEventListener('input', e => $('liveTitle').textContent = e.target.value || 'Live');
+  $('camTitle').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    $('liveTitle').textContent = v || 'Mon live en direct';
+    $('setTitle').value = e.target.value;
+  });
   $('setHost').addEventListener('input', e => {
     const v = e.target.value || 'hote';
     $('hostName').textContent = v;
